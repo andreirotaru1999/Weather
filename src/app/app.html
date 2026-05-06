@@ -1,49 +1,62 @@
-<main>
-  <section>
-    <h1>Weather Search</h1>
+<div class="min-h-screen bg-gradient-to-br from-blue-900 to-blue-600 text-white p-8">
+  <div class="max-w-5xl mx-auto">
+
+    <h1 class="text-4xl font-bold text-center mb-8">Weather Forecast</h1>
 
     <!-- Search form -->
-    <div>
+    <div class="flex gap-3 justify-center mb-8">
       <input
         type="text"
         placeholder="Enter city name"
         [value]="city()"
-        (input)="city.set($event.target.value)"
+        (input)="city.set($any($event.target).value)"
+        (keydown.enter)="search()"
+        class="px-4 py-2 rounded-xl bg-white/20 text-white placeholder-white/60 w-72 outline-none focus:ring-2 focus:ring-white/40"
       />
-      <button (click)="search()" [disabled]="isLoading()">
+      <button
+        (click)="search()"
+        [disabled]="isLoading()"
+        class="px-6 py-2 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 disabled:opacity-50 transition"
+      >
         {{ isLoading() ? 'Searching...' : 'Search' }}
       </button>
     </div>
 
-    <!-- Loading state -->
-    @if (isLoading()) {
-      <p>Loading...</p>
-    }
-
     <!-- Error state -->
     @if (hasError()) {
-      <p style="color: red;">{{ error() }}</p>
+      <p class="text-center text-red-300 mb-6">{{ error() }}</p>
+    }
+
+    <!-- Loading state -->
+    @if (isLoading()) {
+      <p class="text-center opacity-70">Loading forecast...</p>
     }
 
     <!-- Result state -->
     @if (forecast(); as f) {
-      <div style="margin-top: 2rem;">
-        <h2>{{ f.city }}</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+      <div>
+        <h2 class="text-2xl font-semibold text-center mb-6">{{ f.city }}</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           @for (day of f.days; track day.date) {
-            <div style="border: 1px solid #ccc; padding: 1rem; border-radius: 4px;">
-              <p style="font-weight: bold;">{{ day.date }}</p>
-              <p>{{ day.description }}</p>
-              <p>Avg: {{ day.temp }}°C | Min: {{ day.tempMin }}°C | Max: {{ day.tempMax }}°C</p>
-              <p>Humidity: {{ day.humidity }}%</p>
-              <p>Wind Speed: {{ day.windSpeed }} km/h</p>
-              <p>Precipitation Chance: {{ day.precipProbability }}%</p>
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 flex flex-col gap-2 hover:bg-white/20 transition">
+              <p class="font-bold text-lg">{{ day.date }}</p>
+              <p class="text-sm opacity-80">{{ day.description }}</p>
+              <div class="mt-1">
+                <p class="text-3xl font-bold">{{ day.temp }}°C</p>
+                <p class="text-sm opacity-70">{{ day.tempMin }}° / {{ day.tempMax }}°</p>
+              </div>
+              <div class="text-sm opacity-80 mt-2 space-y-1">
+                <p>💧 Humidity: {{ day.humidity }}%</p>
+                <p>💨 Wind: {{ day.windSpeed }} km/h</p>
+                <p>🌧 Rain chance: {{ day.precipProbability }}%</p>
+              </div>
             </div>
           }
         </div>
       </div>
     }
-  </section>
 
-  <router-outlet />
-</main>
+  </div>
+</div>
+
+<router-outlet />
