@@ -1,0 +1,12 @@
+<div class="min-h-screen bg-gradient-to-br from-blue-900 to-blue-600 text-white flex flex-col">
+  <nav class="bg-blue-900/50 p-4">
+    <div class="max-w-5xl mx-auto flex gap-6">
+      <a routerLink="/" class="font-semibold hover:text-blue-200">Weather</a>
+      <a routerLink="/favorites" class="hover:text-blue-200">Favorites</a>
+    </div>
+  </nav>
+
+  <div class="flex-1">
+    <router-outlet />
+  </div>
+</div>
