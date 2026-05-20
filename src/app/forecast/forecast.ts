@@ -1,6 +1,9 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs';
 import { WeatherService } from '../weather/weather.service';
-import { WeatherForecast } from '../weather/weather.model';
+import { GeocodingService } from '../weather/geocoding.service';
+import { WeatherForecast, CitySuggestion } from '../weather/weather.model';
 import { FavoritesService } from '../favorites/favorites.service';
 import { ActivatedRoute } from '@angular/router';
 
@@ -12,18 +15,60 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class ForecastComponent implements OnInit {
   private weatherService = inject(WeatherService);
+  private geocodingService = inject(GeocodingService);
   private favoritesService = inject(FavoritesService);
   private route = inject(ActivatedRoute);
 
-  // Core state signals
   protected city = signal('');
   protected forecast = signal<WeatherForecast | null>(null);
   protected isLoading = signal(false);
   protected error = signal<string | null>(null);
   protected unit = signal<'C' | 'F'>('F');
   protected visibleDays = signal(7);
+  protected autoRefresh = signal(false);
+  protected refreshInterval = signal(60);
+  private intervalId = signal<ReturnType<typeof setInterval> | null>(null);
 
-  // Derived state (computed, not signal)
+  protected suggestions = signal<CitySuggestion[]>([]);
+  protected showDropdown = signal(false);
+  protected isSuggestionsLoading = signal(false);
+
+  private inputSubject = new Subject<string>();
+
+  constructor() {
+    effect(() => {
+      // Clear any existing interval
+      if (this.intervalId()) {
+        clearInterval(this.intervalId()!);
+        this.intervalId.set(null);
+      }
+
+      // Start new interval only if auto-refresh is on AND we have a forecast
+      if (this.autoRefresh() && this.forecast()) {
+        const id = setInterval(() => {
+          this.search();
+        }, this.refreshInterval() * 1000);
+        this.intervalId.set(id as any);
+      }
+    });
+
+    // RxJS pipeline for city autocomplete
+    this.inputSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      filter(query => query.length >= 2),
+      switchMap(query => {
+        this.isSuggestionsLoading.set(true);
+        return this.geocodingService.getSuggestions(query);
+      }),
+      takeUntilDestroyed()
+    ).subscribe(results => {
+      this.suggestions.set(results);
+      this.showDropdown.set(results.length > 0);
+      this.isSuggestionsLoading.set(false);
+    });
+  }
+
   protected hasError = computed(() => this.error() !== null);
   protected convertedForecast = computed(() => {
     const forecast = this.forecast();
@@ -56,6 +101,35 @@ export class ForecastComponent implements OnInit {
 
   protected toggleFavorite(city: string) {
     this.favoritesService.toggle(city);
+  }
+
+  protected onInput(value: string): void {
+    this.city.set(value);
+    if (value.length < 2) this.closeSuggestions();
+    this.inputSubject.next(value);
+  }
+
+  protected selectSuggestion(suggestion: CitySuggestion): void {
+    this.city.set(this.formatSuggestion(suggestion));
+    this.closeSuggestions();
+    this.search();
+  }
+
+  protected formatSuggestion(s: CitySuggestion): string {
+    return [s.name, s.admin1, s.country].filter(Boolean).join(', ');
+  }
+
+  protected closeSuggestions(): void {
+    this.showDropdown.set(false);
+    this.suggestions.set([]);
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') this.closeSuggestions();
+    if (event.key === 'Enter') {
+      this.closeSuggestions();
+      this.search();
+    }
   }
 
   ngOnInit() {
@@ -94,4 +168,10 @@ export class ForecastComponent implements OnInit {
   protected convertToCelsius(fahrenheit: number): number {
     return Math.round((fahrenheit - 32) * 5 / 9);
   }
+
+  ngOnDestroy() {
+  if (this.intervalId()) {
+    clearInterval(this.intervalId() ?? undefined);
+  }
+}
 }
