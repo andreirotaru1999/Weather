@@ -1,0 +1,49 @@
+﻿name: Deploy to S3
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build app
+        env:
+          VITE_VISUALCROSSING_API_KEY: ${{ secrets.VITE_VISUALCROSSING_API_KEY }}
+        run: npm run build
+      
+      - name: Deploy to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+        run: |
+          aws s3 sync dist/weather s3://${{ secrets.AWS_S3_BUCKET }}/ --delete --cache-control "public, max-age=3600"
+      
+      - name: Deployment Summary
+        run: |
+          echo "✅ Deployment successful!"
+          echo "🌍 App URL: https://${{ secrets.AWS_S3_BUCKET }}.s3.amazonaws.com/index.html"
+          echo "📦 Built files uploaded to S3"
+          echo "🔄 Environment: ${{ github.event.inputs.environment }}"
