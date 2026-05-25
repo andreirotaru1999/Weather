@@ -46,5 +46,5 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
-src/environments/environment.ts
-CLAUDE.md
+
+CLAUDE.md 
