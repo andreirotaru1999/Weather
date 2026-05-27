@@ -1,0 +1,42 @@
+name: Deploy to Ubuntu VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+jobs:
+  deploy:
+    runs-on: self-hosted 
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build app
+        env:
+          VITE_VISUALCROSSING_API_KEY: ${{ secrets.VITE_VISUALCROSSING_API_KEY }}
+        run: npm run build
+      
+      - name: Deploy files
+        run: |
+          sudo cp -r dist/weather/* /var/www/weather/
+      
+      - name: Deployment Summary
+        run: |
+          echo "✅ Deployment to VM successful!"
+          echo "📦 Built files deployed to /var/www/weather"
