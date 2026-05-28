@@ -34,7 +34,7 @@ jobs:
       
       - name: Deploy files
         run: |
-          sudo cp -r dist/weather/* /var/www/weather/
+          sudo cp -r dist/weather/browser/* /var/www/weather/
       
       - name: Deployment Summary
         run: |

@@ -39,7 +39,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
         run: |
-          aws s3 sync dist/weather s3://${{ secrets.AWS_S3_BUCKET }}/ --delete --cache-control "public, max-age=3600"
+          aws s3 sync dist/weather/browser s3://${{ secrets.AWS_S3_BUCKET }}/ --delete --cache-control "public, max-age=3600"
       
       - name: Deployment Summary
         run: |
