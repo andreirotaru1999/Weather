@@ -32,7 +32,15 @@ jobs:
         env:
           VITE_VISUALCROSSING_API_KEY: ${{ secrets.VITE_VISUALCROSSING_API_KEY }}
         run: npm run build
-      
+
+      - name: Create config.json from secret
+        run: |
+          cat > dist/weather/browser/config.json << EOF
+          {
+            "weatherApiKey": "${{ secrets.VITE_VISUALCROSSING_API_KEY }}"
+          }
+          EOF
+
       - name: Deploy to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

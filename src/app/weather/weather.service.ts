@@ -9,13 +9,15 @@ import { environment } from '../../environments/environment';
 })
 export class WeatherService {
   private http = inject(HttpClient);
-  private apiKey = environment.weatherApiKey;
   private apiUrl = 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline';
 
   getWeather(city: string): Observable<WeatherForecast> {
+    // Read API key at request time (after config.json is loaded)
+    const apiKey = (window as any).__APP_CONFIG__?.weatherApiKey || environment.weatherApiKey || '';
+
     const url = `${this.apiUrl}/${encodeURIComponent(city)}`;
     const params = {
-      key: this.apiKey,
+      key: apiKey,
       include: 'days'
     };
 
